@@ -236,6 +236,14 @@ class Camera2Source(context: Context): VideoSource() {
     camera.removeImageListener()
   }
 
+  fun addAdditionalSurface(surface: android.view.Surface) {
+    camera.addAdditionalSurface(surface)
+  }
+
+  fun removeAdditionalSurface(surface: android.view.Surface) {
+    camera.removeAdditionalSurface(surface)
+  }
+
   @RequiresApi(Build.VERSION_CODES.P)
   fun physicalCamerasAvailable() = camera.getPhysicalCamerasAvailable()
 

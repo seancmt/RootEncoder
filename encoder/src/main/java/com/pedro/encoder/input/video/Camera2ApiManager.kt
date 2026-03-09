@@ -99,6 +99,7 @@ class Camera2ApiManager(context: Context) : CameraDevice.StateCallback() {
         private set
     var isRunning: Boolean = false
         private set
+    private val additionalSurfaces = mutableListOf<Surface>()
     private var fps = 30
     private val semaphore = Semaphore(0)
     private var cameraCallbacks: CameraCallbacks? = null
@@ -149,11 +150,20 @@ class Camera2ApiManager(context: Context) : CameraDevice.StateCallback() {
         isPrepared = true
     }
 
+    fun addAdditionalSurface(surface: Surface) {
+        additionalSurfaces.add(surface)
+    }
+
+    fun removeAdditionalSurface(surface: Surface) {
+        additionalSurfaces.remove(surface)
+    }
+
     private fun startPreview(cameraDevice: CameraDevice) {
         try {
             val listSurfaces = mutableListOf<Surface>()
             listSurfaces.add(surfaceEncoder)
             imageReader?.let { listSurfaces.add(it.surface) }
+            listSurfaces.addAll(additionalSurfaces)
             val captureRequest = drawSurface(cameraDevice, listSurfaces)
             createCaptureSession(
                 cameraDevice,
