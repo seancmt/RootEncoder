@@ -251,7 +251,16 @@ class MultiStream(
         for (udpClient in udpClients) udpClient.sendAudio(audioBuffer.duplicate(), info)
     }
 
+    /**
+     * When true, internal video encoder output is suppressed from being sent to stream clients.
+     * Use [sendExternalVideoFrame] to inject externally-encoded video frames instead.
+     * Audio and preview continue to work normally.
+     */
+    @Volatile
+    var useExternalVideo = false
+
     override fun onVideoInfoImp(sps: ByteBuffer, pps: ByteBuffer?, vps: ByteBuffer?) {
+        if (useExternalVideo) return
         for (rtmpClient in rtmpClients) rtmpClient.setVideoInfo(sps.duplicate(), pps?.duplicate(), vps?.duplicate())
         for (rtspClient in rtspClients) rtspClient.setVideoInfo(sps.duplicate(), pps?.duplicate(), vps?.duplicate())
         for (srtClient in srtClients) srtClient.setVideoInfo(sps.duplicate(), pps?.duplicate(), vps?.duplicate())
@@ -259,6 +268,29 @@ class MultiStream(
     }
 
     override fun getVideoDataImp(videoBuffer: ByteBuffer, info: MediaCodec.BufferInfo) {
+        if (useExternalVideo) return
+        for (rtmpClient in rtmpClients) rtmpClient.sendVideo(videoBuffer.duplicate(), info)
+        for (rtspClient in rtspClients) rtspClient.sendVideo(videoBuffer.duplicate(), info)
+        for (srtClient in srtClients) srtClient.sendVideo(videoBuffer.duplicate(), info)
+        for (udpClient in udpClients) udpClient.sendVideo(videoBuffer.duplicate(), info)
+    }
+
+    /**
+     * Send externally-encoded video codec config (SPS/PPS/VPS) to all stream clients.
+     * Must be called before [sendExternalVideoFrame] when [useExternalVideo] is true.
+     */
+    fun sendExternalVideoInfo(sps: ByteBuffer, pps: ByteBuffer?, vps: ByteBuffer?) {
+        for (rtmpClient in rtmpClients) rtmpClient.setVideoInfo(sps.duplicate(), pps?.duplicate(), vps?.duplicate())
+        for (rtspClient in rtspClients) rtspClient.setVideoInfo(sps.duplicate(), pps?.duplicate(), vps?.duplicate())
+        for (srtClient in srtClients) srtClient.setVideoInfo(sps.duplicate(), pps?.duplicate(), vps?.duplicate())
+        for (udpClient in udpClients) udpClient.setVideoInfo(sps.duplicate(), pps?.duplicate(), vps?.duplicate())
+    }
+
+    /**
+     * Send an externally-encoded video frame to all stream clients.
+     * Use when [useExternalVideo] is true to bypass the internal GL-based video encoder.
+     */
+    fun sendExternalVideoFrame(videoBuffer: ByteBuffer, info: MediaCodec.BufferInfo) {
         for (rtmpClient in rtmpClients) rtmpClient.sendVideo(videoBuffer.duplicate(), info)
         for (rtspClient in rtspClients) rtspClient.sendVideo(videoBuffer.duplicate(), info)
         for (srtClient in srtClients) srtClient.sendVideo(videoBuffer.duplicate(), info)
